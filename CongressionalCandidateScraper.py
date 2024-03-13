@@ -1,24 +1,30 @@
-from bs4 import BeautifulSoup
-import requests
-import re
 import csv
+import re
+from dataclasses import dataclass, fields
+from datetime import datetime
 from enum import Enum
 
+import requests
+from bs4 import BeautifulSoup
 
+
+
+@dataclass
 class CongressionalCandidate:
-    def __init__(self, name, party, office_name, incumbent_status, bp_id, bp_bio_link, bp_img_link):
-        self.name = name
-        self.party = party
-        self.office_name = office_name
-        self.incumbent_status = incumbent_status
-        self.ballotpedia_id = bp_id
-        self.ballotpedia_bio_link = bp_bio_link
-        self.ballotpedia_img_link = bp_img_link
+    name: str
+    party: str
+    office_name: str
+    incumbent_status: str
+    ballotpedia_id: str
+    ballotpedia_bio_link: str
+    ballotpedia_img_link: str
 
     # for printing to console
     def __str__(self):
-        return (f"Candidate(name: {self.name}, party: {self.party}, office: {self.office_name}, incumbent_status: {self.incumbent_status},"
-                f"bp_id: {self.ballotpedia_id}, bp_bio_link: {self.ballotpedia_bio_link}, bp_img_link: {self.ballotpedia_img_link})")
+        return (
+            f"Candidate(name: {self.name}, party: {self.party}, office: {self.office_name}, incumbent_status: {self.incumbent_status},"
+            f"bp_id: {self.ballotpedia_id}, bp_bio_link: {self.ballotpedia_bio_link}, bp_img_link: {self.ballotpedia_img_link})"
+        )
 
 
 class OfficeType(Enum):
@@ -28,14 +34,16 @@ class OfficeType(Enum):
 
 class CongressionalCandidateScraper:
     """This class scrapes either House or Senate candidates from ballotpedia for 2024 elections"""
+
+    BASE_URL = f"https://ballotpedia.org/List_of_congressional_candidates_in_the_{datetime.now().year}_elections"
+
     def __init__(self):
-        html_content = self.get_html_content_for_soup_from_url()
-        self.soup = BeautifulSoup(html_content, 'html.parser')
-        self.headers = ['name', 'party', 'office_name', 'incumbent_status', 'bp_id', 'bp_bio_link', 'bp_img_link']
+        html_content = self.get_html_content_for_soup(self.BASE_URL)
+        self.soup = BeautifulSoup(html_content, "html.parser")
+        self.headers = [field.name for field in fields(CongressionalCandidate)]
 
     @staticmethod
-    def get_html_content_for_soup_from_url():
-        url = "https://ballotpedia.org/List_of_congressional_candidates_in_the_2024_elections"
+    def get_html_content_for_soup(url):
         response = requests.get(url)
         return response.text
 
@@ -78,9 +86,9 @@ class CongressionalCandidateScraper:
                 party=row_data[1].strip(),
                 office_name=row_data[2].strip(),
                 incumbent_status=incumbent_status,
-                bp_id=bp_bio_link_split_last_part,
-                bp_bio_link=bp_bio_link,
-                bp_img_link=bp_img_link
+                ballotpedia_id=bp_bio_link_split_last_part,
+                ballotpedia_bio_link=bp_bio_link,
+                ballotpedia_img_link=bp_img_link,
             )
 
             candidates.append(cand)
@@ -89,7 +97,7 @@ class CongressionalCandidateScraper:
     def write_candidates_to_csv(self, state, congressional_seat_type, candidates):
         csv_file_name = f"{state}_{congressional_seat_type.value}_candidates.csv"
 
-        with open(csv_file_name, mode='w', newline='') as file:
+        with open(csv_file_name, mode="w", newline="") as file:
             writer = csv.writer(file)
 
             # Write the header
@@ -97,8 +105,12 @@ class CongressionalCandidateScraper:
 
             # Write the data
             for candidate in candidates:
-                writer.writerow([candidate.name, candidate.party, candidate.office_name, candidate.incumbent_status,
-                                 candidate.ballotpedia_id, candidate.ballotpedia_bio_link, candidate.ballotpedia_img_link])
+                writer.writerow(
+                    [
+                        getattr(candidate, field.name)
+                        for field in fields(CongressionalCandidate)
+                    ]
+                )
 
 
 if __name__ == "__main__":
