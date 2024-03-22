@@ -8,14 +8,13 @@ import requests
 from bs4 import BeautifulSoup
 
 
-
 @dataclass
 class CongressionalCandidate:
-    name: str
-    party: str
     office_name: str
-    incumbent_status: str
+    name: str
     ballotpedia_id: str
+    party: str
+    incumbent_status: str
     ballotpedia_bio_link: str
     ballotpedia_img_link: str
 
@@ -86,9 +85,9 @@ class CongressionalCandidateScraper:
             bp_bio_link_split_last_part = bp_bio_link_split[-1]
 
             cand = CongressionalCandidate(
+                office_name=row_data[2].strip(),
                 name=candidate_name.strip(),
                 party=row_data[1].strip(),
-                office_name=row_data[2].strip(),
                 incumbent_status=incumbent_status,
                 ballotpedia_id=bp_bio_link_split_last_part,
                 ballotpedia_bio_link=bp_bio_link,
@@ -126,12 +125,12 @@ def get_state_names():
 if __name__ == "__main__":
     scraper = CongressionalCandidateScraper()  # create instance of scraper class
 
-    # For a SINGLE STATE do this
-    # Specify the state in camel-case (ie "California", "NewYork", etc) and congress office type Enum (OfficeType
-    # SENATE or HOUSE and whether to write to CSV file or not)
+    """For a SINGLE STATE do this
+    Specify the state in camel-case (ie "California", "NewYork", etc) and congress office type Enum (OfficeType
+    SENATE or HOUSE and whether to write to CSV file or not)"""
     # candidates = scraper.scrape_candidates_by_state(state="Wisconsin", write_to_csv=True)
 
-    # For MULTIPLE states, edit the 'state_names.txt' file with only the states you want and do this
+    """For MULTIPLE states, edit the 'state_names.txt' file with only the states you want and do this"""
     state_names = get_state_names()
     for state_name in state_names:
         candidates_for_state = scraper.scrape_candidates_by_state(state=state_name, write_to_csv=True)
